@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ventas por Mes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background: linear-gradient(to right, #4b0082, #0000ff);
+            color: white;
+            padding: 20px;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            padding: 20px;
+        }
+        #primerFila{
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+        }
+        #estadisticos{
+            display:flex;
+            flex-direction: column;
+            justify-content: space-around;
+        }
+        .cuadrado {
+            background: linear-gradient(to right, #4b0082, #0000ff); /* Mismo gradiente que el header */
+            color: white; /* Texto en blanco para contrastar */
+            padding: 20px;
+            border-radius: 10px; /* Bordes redondeados */
+            text-align: center;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); /* Sombra para dar profundidad */
+            margin: 10px 0; /* Espacio entre los cuadrados */
+        }
+
+        .cuadrado p {
+            margin: 5px 0; /* Espaciado interno para los párrafos */
+        }
+
+        .cuadrado p:first-child {
+            font-size: 1.2em; /* Tamaño más grande para el título */
+        }
+
+        .cuadrado p:last-child {
+            font-size: 1.5em; /* Tamaño más grande para el valor */
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #ffffff;
+            box-shadow: 0px 0px 10px gray;
+            border-radius: 10px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #0000ff;
+            color: white;
+        }
+        td {
+            background-color: #f9f9f9;
+        }
+        .footer {
+            background-color: #e66f51;
+            color: white;
+            padding: 10px;
+            margin-top: 20px;
+        }
+        .chart-container {
+            margin-top: 20px;
+            position: relative;
+            width: 80%;
+            margin: auto;
+        }
+    </style>
+    <!-- Incluir Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <header>
+        <h1>Data Science Tour</h1>
+    </header>
+
+    <div class="container">
+
+        <!-- Selector para filtrar por año -->
+        <div id="primerFila">
+            <div id="grafico">
+                <h1>Tabla de ingresos por año</h1>
+                <label for="yearFilter">Filtrar por año:</label>
+                <select id="yearFilter" onchange="updateChart()">
+                    <option value="2022">2022</option>
+                    <option value="2023">2023</option>
+                    <option value="2024">2024</option>
+                </select>
+
+                <!-- Contenedor para el gráfico de barras -->
+                <div class="chart-container">
+                    <canvas id="salesChart"></canvas>
+                </div>
+            </div>
+            <div id="estadisticos">
+                <div class="cuadrado">
+                    <p>Promedio</p>
+                    <p><strong>7 200</strong></p>
+                </div>
+                <div class="cuadrado">
+                    <p>Mes con mayor ventas</p>
+                    <p><strong>Diciembre</strong></p>
+                </div>
+                <div class="cuadrado">
+                    <p>Total ventas</p>
+                    <p><strong>1 675 987</strong></p>
+                </div>
+            </div>
+        </div>
+        
+
+        <!-- Tabla para mostrar las ventas -->
+        <table id="salesTable">
+            <thead>
+                <tr>
+                    <th>Mes</th>
+                    <th>2022</th>
+                    <th>2023</th>
+                    <th>2024</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Filas dinámicas se insertarán aquí -->
+            </tbody>
+        </table>
+
+        
+    </div>
+
+
+    <script>
+        // Datos JSON de ventas por mes (simulados)
+        const ventasData = {
+            "ventas": [
+                { "mes": "Enero", "2022": 5000, "2023": 6000, "2024": 6500 },
+                { "mes": "Febrero", "2022": 4500, "2023": 5500, "2024": 6000 },
+                { "mes": "Marzo", "2022": 4800, "2023": 5200, "2024": 6300 },
+                { "mes": "Abril", "2022": 5300, "2023": 6500, "2024": 7000 },
+                { "mes": "Mayo", "2022": 4700, "2023": 5600, "2024": 6000 },
+                { "mes": "Junio", "2022": 4900, "2023": 6200, "2024": 6800 },
+                { "mes": "Julio", "2022": 5100, "2023": 6400, "2024": 7100 },
+                { "mes": "Agosto", "2022": 5300, "2023": 6700, "2024": 7300 },
+                { "mes": "Septiembre", "2022": 4900, "2023": 5900, "2024": 6500 },
+                { "mes": "Octubre", "2022": 5200, "2023": 6300, "2024": 6800 },
+                { "mes": "Noviembre", "2022": 5400, "2023": 6600, "2024": 7200 },
+                { "mes": "Diciembre", "2022": 6000, "2023": 7200, "2024": 8000 }
+            ]
+        };
+
+        // Función para llenar la tabla con los datos
+        function loadSalesData() {
+            const tableBody = document.getElementById('salesTable').getElementsByTagName('tbody')[0];
+            ventasData.ventas.forEach(venta => {
+                const newRow = tableBody.insertRow();
+                newRow.insertCell(0).textContent = venta.mes; // Mes
+                newRow.insertCell(1).textContent = venta['2022']; // Ventas 2022
+                newRow.insertCell(2).textContent = venta['2023']; // Ventas 2023
+                newRow.insertCell(3).textContent = venta['2024']; // Ventas 2024
+            });
+        }
+
+        // Inicializar el gráfico
+        let salesChart;
+        function initializeChart() {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            salesChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ventasData.ventas.map(v => v.mes),
+                    datasets: [{
+                        label: 'Ventas',
+                        data: ventasData.ventas.map(v => v['2022']), // Datos iniciales para 2022
+                        backgroundColor: 'rgba(75, 0, 130, 1)',
+                        borderColor: 'rgba(75, 0, 130, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Función para actualizar el gráfico según el año seleccionado
+        function updateChart() {
+            const selectedYear = document.getElementById('yearFilter').value;
+            salesChart.data.datasets[0].data = ventasData.ventas.map(v => v[selectedYear]);
+            salesChart.data.datasets[0].label = `Ventas ${selectedYear}`;
+            salesChart.update();
+        }
+
+        // Cargar los datos y el gráfico cuando la página se carga
+        window.onload = function() {
+            loadSalesData();
+            initializeChart();
+        };
+    </script>
+
+</body>
+</html>
